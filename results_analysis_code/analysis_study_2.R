@@ -1,0 +1,363 @@
+library(tidyverse)
+
+
+# Loadr results -----------------------------------------------------------
+
+
+load("results/results_study_2/sim_test_study_2.RData")
+
+
+# Check iterations --------------------------------------------------------
+
+K_all <- results %>%
+  select(batch, iterations) %>%
+  distinct(.) %>%
+  summarize(iterations = sum(iterations)) %>%
+  pull(iterations) 
+
+K_all
+
+results <- results %>%
+  mutate(cat_num = cat_num - 1)
+
+
+
+# MCSE --------------------------------------------------------------------
+
+
+mcse_01 <- sqrt((.01 * (1 - .01))/ K_all)
+mcse_05 <- sqrt((.05 * (1 - .05))/ K_all)
+mcse_10 <- sqrt((.10 * (1 - .10))/ K_all)
+
+
+
+data_int <- tibble(alpha = c(".01", 
+                             ".05", 
+                             ".10"),
+                   int = c(.01, .05, .10),
+                   mcse = c(mcse_01, mcse_05, mcse_10)) %>%
+  mutate(error = int + 1.96 * mcse)
+
+
+# Type 1 Error Naive F Analysis -------------------------------------------
+
+# for supplementary
+
+naive_dat <- results %>%
+  select(test, beta_1, rho, tau, m, cov_type, cat_num, starts_with("rej_rate")) %>%
+  filter(test == "Naive-F", beta_1 == 0) %>%
+  mutate(m = as.character(m),
+         q = paste("q =", cat_num)) %>%
+  gather(alpha, rej_rate, c(rej_rate_01, rej_rate_05, rej_rate_10)) %>%
+  mutate(alpha = case_when(alpha == "rej_rate_01" ~ ".01",
+                           alpha == "rej_rate_05" ~ ".05",
+                           alpha == "rej_rate_10" ~ ".10"))  %>%
+  group_by(m, rho, tau, cov_type, q, alpha) %>%
+  summarize_at(vars(rej_rate), mean) %>%
+  mutate(mcse = sqrt((rej_rate * (1 - rej_rate))/ K_all))
+
+summary(naive_dat$mcse)
+
+naive_check <- naive_dat %>%
+  group_by(q, alpha, m, cov_type) %>%
+  summarize(min = min(rej_rate),
+            max = max(rej_rate),
+            median = median(rej_rate))
+
+  naive_dat %>%
+    mutate(cov_type = if_else(cov_type == "between", "Study-level",
+                              "Effect size-level")) %>%
+    ggplot(aes(x = m, y = rej_rate, color = m, shape = cov_type)) +
+    geom_hline(data = data_int, aes(yintercept = int), linetype = "solid") + 
+    geom_hline(data = data_int, aes(yintercept = error), linetype = "dashed") + 
+    geom_point(alpha = .5, size = 2.2, position = position_jitterdodge()) + 
+    scale_y_continuous(breaks = seq(0, 1, .1)) + 
+    scale_fill_brewer(palette = "Dark2") +
+    scale_color_brewer(palette = "Dark2") +
+    facet_grid(alpha ~ q, scales = "free_y",  labeller = label_bquote(rows = alpha == .(alpha))) + 
+    labs(x = "Number of Studies", y = "Type 1 Error Rate", shape = "", fill = "", color = "") + 
+    theme_bw() +
+    theme(legend.position = "bottom",
+          plot.caption=element_text(hjust = 0, size = 10),
+          legend.title=element_text(size = 11), 
+          legend.text=element_text(size = 11))
+    
+    
+ggsave("graphs_paper/study_2/naivef_2.png", device = "png", dpi = 500, height = 6, width = 7)
+
+
+# Check mcse
+
+naive_dat %>%
+  ungroup() %>%
+  group_by(alpha) %>%
+  summarize(min = min(mcse),
+            max = max(mcse))
+
+
+# Create data to analyze rejection rates ----------------------------------
+
+# Type 1 Error
+
+type1_dat <- results %>%
+  filter(beta_1 == 0) %>%
+  mutate(m = paste("m =", m),
+         q = paste("q =", cat_num)) %>%
+  gather(alpha, rej_rate, c(rej_rate_01, rej_rate_05, rej_rate_10)) %>%
+  mutate(alpha = case_when(alpha == "rej_rate_01" ~ ".01",
+                           alpha == "rej_rate_05" ~ ".05",
+                           alpha == "rej_rate_10" ~ ".10")) %>%
+  group_by(m, tau, rho, q, cov_type, cat_num, test, alpha) %>% 
+  summarize(rej_rate = mean(rej_rate),
+            .groups = "drop") %>%
+  mutate(mcse = sqrt((rej_rate * (1 - rej_rate))/ K_all))
+
+
+# check mcse
+
+mcse_type_1 <- type1_dat %>%
+  ungroup() %>%
+  filter(test != "Naive-F") %>%
+  group_by(test, alpha) %>%
+  summarize(max = max(mcse)) %>%
+  spread(alpha, max) %>%
+  mutate_if(is.numeric, round, 3)
+
+# Power
+
+power_dat <- results %>%
+  filter(beta_1 != 0) %>%
+  mutate(q = paste("q =", cat_num),
+         m = as.character(m),
+         rho = as.character(rho),
+         tau = as.character(tau)) %>%
+  gather(alpha, rej_rate, c(rej_rate_01, rej_rate_05, rej_rate_10)) %>%
+  mutate(alpha = case_when(alpha == "rej_rate_01" ~ ".01",
+                           alpha == "rej_rate_05" ~ ".05",
+                           alpha == "rej_rate_10" ~ ".10")) %>%
+  group_by(m, tau, rho, q, beta_1, cov_type, cat_num, test, alpha) %>% 
+  summarize(rej_rate = mean(rej_rate),
+            .groups = "drop") %>%
+  mutate(mcse = sqrt((rej_rate * (1 - rej_rate))/ K_all))
+
+
+# Check mcse
+
+power_mcse <- power_dat %>%
+  ungroup() %>%
+  filter(test != "Naive-F") %>%
+  group_by(test, alpha) %>%
+  summarize(max = max(mcse)) %>%
+  spread(alpha, max) %>%
+  mutate_if(is.numeric, round, 3)
+
+
+# Type 1 Error Graphs -----------------------------------------------------
+
+
+create_type1_graph <- function(dat, intercept, error){
+  
+  dat <- dat %>%
+    filter(test != "Naive-F") %>%
+    mutate(cov_type = if_else(cov_type == "between", "Study-level",
+                              "Effect size-level"))
+  
+  dat %>%
+    ggplot(aes(x = test, y = rej_rate, color = test, shape = cov_type)) + 
+    geom_hline(yintercept = intercept, linetype = "solid") + 
+    geom_hline(yintercept = error, linetype = "dashed") + 
+    geom_point(alpha = .5, size = 2.2, position = position_jitterdodge()) + 
+    #scale_y_continuous(breaks = seq(0, .6, br)) + 
+    scale_x_discrete(labels = function(x) lapply(strwrap(x, width = 10, simplify = FALSE), paste, collapse="\n")) + 
+    scale_color_brewer(palette = "Set1") +
+    facet_grid(q ~ m) + 
+    labs(x = "Method", y = "Type 1 Error Rate", shape = "", color = "") + 
+    theme_bw() +
+    theme(legend.position = "bottom",
+          plot.caption=element_text(hjust = 0, size = 10),
+          legend.title=element_text(size = 11), 
+          legend.text=element_text(size = 11))
+}
+
+# Type 1 comparison at alpha = .05 (for main text)
+
+create_type1_graph(dat = type1_dat %>% filter(alpha == ".05"),
+                   intercept = .05,
+                   error = data_int %>% filter(int == .05) %>% pull(error))
+
+
+ggsave("graphs_paper/study_2/type1_05_2.png", device = "png", 
+       dpi = 500, height = 6, width = 8)
+
+# Type 1 comparison at alpha = .01 (for supplementary)
+
+create_type1_graph(dat = type1_dat %>% filter(alpha == ".01"),
+                   intercept = .01,
+                   error = data_int %>% filter(int == .01) %>% pull(error))
+
+ggsave("graphs_paper/study_2/type1_01_2.png", device = "png", 
+       dpi = 500, height = 6, width = 8)
+
+# Type 1 comparison at alpha = .10 (for supplementary)
+
+create_type1_graph(dat = type1_dat %>% filter(alpha == ".10"), 
+                   intercept = .10,
+                   error = data_int %>% filter(int == .10) %>% pull(error))
+
+ggsave("graphs_paper/study_2/type1_10_2.png", device = "png", 
+       dpi = 500, height = 6, width = 7)
+
+
+# Power Graphs ------------------------------------------------------------
+
+power_ratio <- 
+  power_dat %>%
+  select(-c(starts_with("mcse"))) %>%
+  spread(test, rej_rate) %>%
+  mutate(power_diff = CWB - HTZ,
+         power_ratio = HTZ / CWB)
+
+power_scatter <- function(data, x, y) {
+  
+  data %>%
+    mutate(cov_type = if_else(cov_type == "between", "Study-level", "Effect size-level")) %>%
+  ggplot(aes_string(x, y, color = "m", shape = "m")) + 
+    geom_point(alpha = .5, size = 2.2) + 
+    geom_abline(slope = 1, intercept = 0) + 
+    scale_x_continuous(limits = c(0,1), breaks = seq(0,1,0.2), expand = c(0,0)) + 
+    scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2), expand = c(0,0)) + 
+    facet_grid(cov_type ~ q, scales = "free") + 
+    scale_color_brewer(palette = "Dark2") +
+    scale_shape_manual(values = c("diamond","circle","triangle","square")) + 
+    labs(
+      x = paste("Power of", x), 
+      y = paste("Power of", y),
+      color = "Number of studies (m)", shape = "Number of studies (m)"
+    ) + 
+   # ggtitle(title) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      plot.caption=element_text(hjust = 0, size = 10),
+      legend.title=element_text(size = 11), 
+      legend.text=element_text(size = 11),
+      panel.spacing = unit(1, "lines")
+    )  
+}
+
+# Power comparison at alpha = .05 (for main text)
+power_ratio %>%
+  filter(alpha == ".05") %>%
+  power_scatter(x = "HTZ", y = "CWB")
+
+
+ggsave("graphs_paper/study_2/power_05_scatter_2.png", device = "png", dpi = 500, height = 5, width = 7)
+
+
+# Power comparison at alpha = .01 (for supplementary)  
+power_ratio %>%
+  filter(alpha == ".01") %>%
+  power_scatter(x = "HTZ", y = "CWB")
+
+
+ggsave("graphs_paper/study_2/power_01_scatter_2.png", device = "png", dpi = 500, height = 5, width = 7)
+
+# Power comparison at alpha = .10 (for supplementary)  
+power_ratio %>%
+  filter(alpha == ".10") %>%
+  power_scatter(x = "HTZ", y = "CWB")
+
+
+ggsave("graphs_paper/study_2/power_10_scatter_2.png", device = "png", dpi = 500, height = 5, width = 7)
+
+
+# CWB versus CWB-adjusted (for supplementary)
+
+power_ratio %>%
+  filter(alpha == ".05") %>%
+  power_scatter(x = "CWB", y = "`CWB Adjusted`") + 
+  labs(y = "Power of CWB-adjusted")
+
+
+ggsave("graphs_paper/study_2/power_05_scatter_cwbs_2.png", device = "png", dpi = 500, height = 7, width = 12)
+
+
+# Sensitivity Analyses ---------------------------------------------------
+
+# all for supplementary
+
+# tau
+
+create_type1_tau_graph <- function(dat, intercept, error){
+  
+  dat <- dat %>%
+    filter(test != "Naive-F") %>%
+    mutate(cov_type = if_else(cov_type == "between", "Study-level",
+                              "Effect size-level"))
+  
+  dat %>%
+    mutate(tau = as.factor(tau)) %>%
+    ggplot(aes(x = test, y = rej_rate, color = tau, shape = cov_type)) + 
+    geom_hline(yintercept = intercept, linetype = "solid") + 
+    geom_hline(yintercept = error, linetype = "dashed") + 
+    geom_point(alpha = .5, size = 2.2, position = position_jitterdodge()) + 
+    #scale_y_continuous(breaks = seq(0, .6, br)) + 
+    scale_color_manual(values = c("plum2", "plum4")) +
+    scale_x_discrete(labels = function(x) lapply(strwrap(x, width = 10, simplify = FALSE), paste, collapse="\n")) + 
+    facet_grid(q ~ m) + 
+    labs(x = "Method", y = "Type 1 Error Rate", color = expression(tau), shape = "") + 
+    theme_bw() +
+    theme(legend.position = "bottom",
+          plot.caption=element_text(hjust = 0, size = 10),
+          legend.title=element_text(size = 11), 
+          legend.text=element_text(size = 11))
+}
+
+create_type1_tau_graph(dat = type1_dat %>% filter(alpha == ".05"), 
+                       intercept = .05, 
+                       error = data_int %>% filter(int == .05) %>% pull(error))
+
+
+ggsave("graphs_paper/study_2/tau_052.png", device = "png", dpi = 500, height = 6, width = 8)
+
+
+# rho
+
+create_type1_rho_graph <- function(dat, intercept, error, br){
+  
+  dat <- dat %>%
+    filter(test != "Naive-F")  %>%
+    mutate(cov_type = if_else(cov_type == "between", "Study-level",
+                                                            "Effect size-level"))
+  
+  dat %>%
+    #filter(cov_type == cov) %>%
+    mutate(rho = as.factor(rho)) %>%
+    ggplot(aes(x = test, y = rej_rate, color = rho, shape = cov_type)) + 
+    geom_hline(yintercept = intercept, linetype = "solid") + 
+    geom_hline(yintercept = error, linetype = "dashed") + 
+    geom_point(alpha = .5, size = 2.2, position = position_jitterdodge()) + 
+    #scale_y_continuous(breaks = seq(0, .6, br)) + 
+    scale_x_discrete(labels = function(x) lapply(strwrap(x, width = 10, simplify = FALSE), paste, collapse="\n")) + 
+    scale_color_manual(values = c("firebrick2", "firebrick4")) +
+    facet_grid(q ~ m) + 
+    labs(x = "Method", y = "Type 1 Error Rate", color = expression(rho), shape = "") + 
+    #ggtitle(title) + 
+    theme_bw() +
+    theme(legend.position = "bottom",
+          plot.caption=element_text(hjust = 0, size = 10),
+          legend.title=element_text(size = 11), 
+          legend.text=element_text(size = 11))
+}
+
+create_type1_rho_graph(dat = type1_dat %>% filter(alpha == ".05"),
+                       intercept = .05, 
+                       error = data_int %>% filter(int == .05) %>% pull(error),
+                       br = .02)
+
+
+ggsave("graphs_paper/study_2/rho_052.png", device = "png", dpi = 500, height = 6, width = 8)
+
+
+
+
