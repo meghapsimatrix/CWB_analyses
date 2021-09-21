@@ -279,7 +279,7 @@ power_ratio %>%
   labs(y = "Power of CWB-adjusted")
 
 
-ggsave("graphs_paper/study_2/power_05_scatter_cwbs_2.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_2/power_05_scatter_cwbs_2.png", device = "png", dpi = 500, height = 5, width = 7)
 
 
 # Sensitivity Analyses ---------------------------------------------------
