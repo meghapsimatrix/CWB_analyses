@@ -276,7 +276,7 @@ ggsave("graphs_paper/study_2/power_10_scatter_2.png", device = "png", dpi = 500,
 power_ratio %>%
   filter(alpha == ".05") %>%
   power_scatter(x = "CWB", y = "`CWB Adjusted`") + 
-  labs(y = "Power of CWB-adjusted")
+  labs(y = "Power of CWB Adjusted")
 
 
 ggsave("graphs_paper/study_2/power_05_scatter_cwbs_2.png", device = "png", dpi = 500, height = 5, width = 7)
