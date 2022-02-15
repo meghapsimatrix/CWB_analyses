@@ -1,4 +1,5 @@
 library(tidyverse)
+set.seed(20220215)
 
 load("data/tsl_dat.RData")
 
@@ -13,7 +14,6 @@ tsl_dat <- tsl_dat %>%
                          pc = "Peak consumption",
                          qu = "Quantity of use"))
 
-set.seed(20220215)
 random_20 <- sample(unique(tsl_dat$study), 20)
 
 
