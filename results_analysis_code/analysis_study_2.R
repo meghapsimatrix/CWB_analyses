@@ -1,5 +1,8 @@
 library(tidyverse)
 
+dpi_main <- 1000
+dpi_sup <- 500
+set.seed(20220215)
 
 # Loadr results -----------------------------------------------------------
 
@@ -64,26 +67,26 @@ naive_check <- naive_dat %>%
             max = max(rej_rate),
             median = median(rej_rate))
 
-  naive_dat %>%
-    mutate(cov_type = if_else(cov_type == "between", "Study-level",
-                              "Effect size-level")) %>%
-    ggplot(aes(x = m, y = rej_rate, color = m, shape = cov_type)) +
-    geom_hline(data = data_int, aes(yintercept = int), linetype = "solid") + 
-    geom_hline(data = data_int, aes(yintercept = error), linetype = "dashed") + 
-    geom_point(alpha = .5, size = 2.2, position = position_jitterdodge()) + 
-    scale_y_continuous(breaks = seq(0, 1, .1)) + 
-    scale_fill_brewer(palette = "Dark2") +
-    scale_color_brewer(palette = "Dark2") +
-    facet_grid(alpha ~ q, scales = "free_y",  labeller = label_bquote(rows = alpha == .(alpha))) + 
-    labs(x = "Number of Studies", y = "Type 1 Error Rate", shape = "", fill = "", color = "") + 
-    theme_bw() +
-    theme(legend.position = "bottom",
-          plot.caption=element_text(hjust = 0, size = 10),
-          legend.title=element_text(size = 11), 
-          legend.text=element_text(size = 11))
+naive_dat %>%
+  mutate(cov_type = if_else(cov_type == "between", "Study-level",
+                            "Effect size-level")) %>%
+  ggplot(aes(x = m, y = rej_rate, color = m, shape = cov_type)) +
+  geom_hline(data = data_int, aes(yintercept = int), linetype = "solid") + 
+  geom_hline(data = data_int, aes(yintercept = error), linetype = "dashed") + 
+  geom_point(alpha = .5, size = 2.2, position = position_jitterdodge()) + 
+  scale_y_continuous(breaks = seq(0, 1, .1)) + 
+  scale_fill_brewer(palette = "Dark2") +
+  scale_color_brewer(palette = "Dark2") +
+  facet_grid(alpha ~ q, scales = "free_y",  labeller = label_bquote(rows = alpha == .(alpha))) + 
+  labs(x = "Number of Studies", y = "Type 1 Error Rate", shape = "", fill = "", color = "") + 
+  theme_bw() +
+  theme(legend.position = "bottom",
+        plot.caption=element_text(hjust = 0, size = 10),
+        legend.title=element_text(size = 11), 
+        legend.text=element_text(size = 11))
     
     
-ggsave("graphs_paper/study_2/naivef_2.png", device = "png", dpi = 500, height = 6, width = 7)
+ggsave("graphs_paper/study_2/naivef_2.png", device = "png", dpi = dpi_sup, height = 6, width = 7)
 
 
 # Check mcse
@@ -187,7 +190,7 @@ create_type1_graph(dat = type1_dat %>% filter(alpha == ".05"),
 
 
 ggsave("graphs_paper/study_2/type1_05_2.png", device = "png", 
-       dpi = 500, height = 6, width = 8)
+       dpi = dpi_main, height = 6, width = 8)
 
 # Type 1 comparison at alpha = .01 (for supplementary)
 
@@ -196,7 +199,7 @@ create_type1_graph(dat = type1_dat %>% filter(alpha == ".01"),
                    error = data_int %>% filter(int == .01) %>% pull(error))
 
 ggsave("graphs_paper/study_2/type1_01_2.png", device = "png", 
-       dpi = 500, height = 6, width = 8)
+       dpi = dpi_sup, height = 6, width = 8)
 
 # Type 1 comparison at alpha = .10 (for supplementary)
 
@@ -205,7 +208,7 @@ create_type1_graph(dat = type1_dat %>% filter(alpha == ".10"),
                    error = data_int %>% filter(int == .10) %>% pull(error))
 
 ggsave("graphs_paper/study_2/type1_10_2.png", device = "png", 
-       dpi = 500, height = 6, width = 7)
+       dpi = dpi_sup, height = 6, width = 7)
 
 
 # Power Graphs ------------------------------------------------------------
@@ -251,7 +254,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB")
 
 
-ggsave("graphs_paper/study_2/power_05_scatter_2.png", device = "png", dpi = 500, height = 5, width = 7)
+ggsave("graphs_paper/study_2/power_05_scatter_2.png", device = "png", dpi = dpi_main, height = 5, width = 7)
 
 
 # Power comparison at alpha = .01 (for supplementary)  
@@ -260,7 +263,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB")
 
 
-ggsave("graphs_paper/study_2/power_01_scatter_2.png", device = "png", dpi = 500, height = 5, width = 7)
+ggsave("graphs_paper/study_2/power_01_scatter_2.png", device = "png", dpi = dpi_sup, height = 5, width = 7)
 
 # Power comparison at alpha = .10 (for supplementary)  
 power_ratio %>%
@@ -268,7 +271,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB")
 
 
-ggsave("graphs_paper/study_2/power_10_scatter_2.png", device = "png", dpi = 500, height = 5, width = 7)
+ggsave("graphs_paper/study_2/power_10_scatter_2.png", device = "png", dpi = dpi_sup, height = 5, width = 7)
 
 
 # CWB versus CWB-adjusted (for supplementary)
@@ -279,7 +282,7 @@ power_ratio %>%
   labs(y = "Power of CWB Adjusted")
 
 
-ggsave("graphs_paper/study_2/power_05_scatter_cwbs_2.png", device = "png", dpi = 500, height = 5, width = 7)
+ggsave("graphs_paper/study_2/power_05_scatter_cwbs_2.png", device = "png", dpi = dpi_sup, height = 5, width = 7)
 
 
 # Sensitivity Analyses ---------------------------------------------------
@@ -318,7 +321,7 @@ create_type1_tau_graph(dat = type1_dat %>% filter(alpha == ".05"),
                        error = data_int %>% filter(int == .05) %>% pull(error))
 
 
-ggsave("graphs_paper/study_2/tau_052.png", device = "png", dpi = 500, height = 6, width = 8)
+ggsave("graphs_paper/study_2/tau_052.png", device = "png", dpi = dpi_sup, height = 6, width = 8)
 
 
 # rho
@@ -356,7 +359,7 @@ create_type1_rho_graph(dat = type1_dat %>% filter(alpha == ".05"),
                        br = .02)
 
 
-ggsave("graphs_paper/study_2/rho_052.png", device = "png", dpi = 500, height = 6, width = 8)
+ggsave("graphs_paper/study_2/rho_052.png", device = "png", dpi = dpi_sup, height = 6, width = 8)
 
 
 

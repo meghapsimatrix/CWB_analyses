@@ -1,9 +1,13 @@
 library(tidyverse)
 
-load("simulation_code/sim_code_study_1/data/to_test.RData")
+dpi_main <- 1000
+dpi_sup <- 500
+set.seed(20220215)
+
 
 
 # Load results ------------------------------------------------------------
+load("simulation_code/sim_code_study_1/data/to_test.RData")
 
 files <- list.files("results/results_study_1", full.names = TRUE)
 
@@ -101,7 +105,7 @@ naive_dat %>%
           legend.text=element_text(size = 11))
   
 
-ggsave("graphs_paper/study_1/naivef.png", device = "png", dpi = 500, height = 5, width = 7)
+ggsave("graphs_paper/study_1/naivef.png", device = "png", dpi = dpi_sup, height = 5, width = 7)
 
 
 # Check mcse
@@ -201,7 +205,7 @@ create_type1_graph(dat = type1_dat %>% filter(alpha == ".05"),
                    intercept = .05, 
                    error = data_int %>% filter(int == .05) %>% pull(error))
 
-ggsave("graphs_paper/study_1/type1_05.png", device = "png", dpi = 500, height = 7, width = 7)
+ggsave("graphs_paper/study_1/type1_05.png", device = "png", dpi = dpi_main, height = 7, width = 7)
 
 # Type 1 comparison at alpha = .01 (for supplementary)
 
@@ -209,14 +213,14 @@ create_type1_graph(dat = type1_dat %>% filter(alpha == ".01"),
                    intercept = .01,
                    error = data_int %>% filter(int == .01) %>% pull(error))
 
-ggsave("graphs_paper/study_1/type1_01.png", device = "png", dpi = 500, height = 7, width = 7)
+ggsave("graphs_paper/study_1/type1_01.png", device = "png", dpi = dpi_sup, height = 7, width = 7)
 
 # Type 1 comparison at alpha = .10 (for supplementary)
 
 create_type1_graph(dat = type1_dat %>% filter(alpha == ".10"), intercept = .10,
                    error = data_int %>% filter(int == .10) %>% pull(error))
 
-ggsave("graphs_paper/study_1/type1_10.png", device = "png", dpi = 500, height = 7, width = 7)
+ggsave("graphs_paper/study_1/type1_10.png", device = "png", dpi = dpi_sup, height = 7, width = 7)
 
 
 
@@ -260,7 +264,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB") +
   theme(legend.position = c(.75, .15))
 
-ggsave("graphs_paper/study_1/power_05_scatter.png", device = "png", dpi = 500, height = 7, width = 5)
+ggsave("graphs_paper/study_1/power_05_scatter.png", device = "png", dpi = dpi_main, height = 7, width = 5)
 
 
 # Power comparison at alpha = .01 (for supplementary)  
@@ -269,7 +273,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB") +
   theme(legend.position = c(.75, .15))
 
-ggsave("graphs_paper/study_1/power_01_scatter.png", device = "png", dpi = 500, height = 7, width = 5)
+ggsave("graphs_paper/study_1/power_01_scatter.png", device = "png", dpi = dpi_sup, height = 7, width = 5)
 
 
 # Power comparison at alpha = .10 (for supplementary)  
@@ -278,7 +282,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB") +
   theme(legend.position = c(.75, .15))
 
-ggsave("graphs_paper/study_1/power_10_scatter.png", device = "png", dpi = 500, height = 7, width = 5)
+ggsave("graphs_paper/study_1/power_10_scatter.png", device = "png", dpi = dpi_sup, height = 7, width = 5)
 
 
 # By covariate combination (all for supplementary)
@@ -289,7 +293,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB") + 
   facet_wrap(~ q_cov, ncol = 5) 
 
-ggsave("graphs_paper/study_1/power_05_scatter_covs.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_1/power_05_scatter_covs.png", device = "png", dpi = dpi_sup, height = 7, width = 12)
 
 
 power_ratio %>%
@@ -298,7 +302,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB") + 
   facet_wrap(~ q_cov, ncol = 5) 
 
-ggsave("graphs_paper/study_1/power_01_scatter_covs.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_1/power_01_scatter_covs.png", device = "png", dpi = dpi_sup, height = 7, width = 12)
 
 
 power_ratio %>%
@@ -307,7 +311,7 @@ power_ratio %>%
   power_scatter(x = "HTZ", y = "CWB") + 
   facet_wrap(~ q_cov, ncol = 5) 
 
-ggsave("graphs_paper/study_1/power_10_scatter_covs.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_1/power_10_scatter_covs.png", device = "png", dpi = dpi_sup, height = 7, width = 12)
 
 
 # CWB versus CWB-adjusted (for supplementary)
@@ -318,7 +322,7 @@ power_ratio %>%
   labs(y = "Power of CWB Adjusted") +
   theme(legend.position = c(.75, .15))
 
-ggsave("graphs_paper/study_1/power_05_scatter_cwbs.png", device = "png", dpi = 500, height = 7, width = 5)
+ggsave("graphs_paper/study_1/power_05_scatter_cwbs.png", device = "png", dpi = dpi_sup, height = 7, width = 5)
 
 
 # Sensitivity Analyses ---------------------------------------------------
@@ -351,7 +355,7 @@ create_type1_tau_graph <- function(dat, intercept, error, br){
 create_type1_tau_graph(dat = type1_dat %>% filter(alpha == ".05"), intercept = .05, 
                        error = data_int %>% filter(int == .05) %>% pull(error))
 
-ggsave("graphs_paper/study_1/tau_05.png", device = "png", dpi = 500, height = 7, width = 7)
+ggsave("graphs_paper/study_1/tau_05.png", device = "png", dpi = dpi_sup, height = 7, width = 7)
 
 create_type1_tau_graph(dat = type1_dat %>% filter(alpha == ".01"), intercept = .01,
                        error = data_int %>% filter(int == .01) %>% pull(error))
@@ -361,7 +365,6 @@ create_type1_tau_graph(dat = type1_dat %>% filter(alpha == ".10"), intercept = .
 
 
 # rho
-
 
 create_type1_rho_graph <- function(dat, intercept, error){
   
@@ -387,7 +390,7 @@ create_type1_rho_graph <- function(dat, intercept, error){
 create_type1_rho_graph(dat = type1_dat %>% filter(alpha == ".05"), intercept = .05,
                        error = data_int %>% filter(int == .05) %>% pull(error))
 
-ggsave("graphs_paper/study_1/rho_05.png", device = "png", dpi = 500, height = 7, width = 7)
+ggsave("graphs_paper/study_1/rho_05.png", device = "png", dpi = dpi_sup, height = 7, width = 7)
 
 create_type1_rho_graph(dat = type1_dat %>% filter(alpha == ".01"), intercept = .01, 
                        error = data_int %>% filter(int == .01) %>% pull(error))
@@ -452,7 +455,7 @@ create_type1_covs(q_level = "q = 1",
                   dat = type1_dat %>% filter(alpha == ".05"))
 
 
-ggsave("graphs_paper/study_1/type1_05_q1.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_1/type1_05_q1.png", device = "png", dpi = dpi_sup, height = 7, width = 12)
 
 
 create_type1_covs(q_level = "q = 1",
@@ -461,7 +464,7 @@ create_type1_covs(q_level = "q = 1",
                   dat = type1_dat %>% filter(alpha == ".01"))
 
 
-ggsave("graphs_paper/study_1/type1_01_q1.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_1/type1_01_q1.png", device = "png", dpi = dpi_sup, height = 7, width = 12)
 
 create_type1_covs(q_level = "q = 1",
                   intercept = .10, 
@@ -470,4 +473,4 @@ create_type1_covs(q_level = "q = 1",
 
 
 
-ggsave("graphs_paper/study_1/type1_10_q1.png", device = "png", dpi = 500, height = 7, width = 12)
+ggsave("graphs_paper/study_1/type1_10_q1.png", device = "png", dpi = dpi_sup, height = 7, width = 12)
