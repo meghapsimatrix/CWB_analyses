@@ -13,7 +13,7 @@ tsl_dat <- tsl_dat %>%
                          pc = "Peak consumption",
                          qu = "Quantity of use"))
 
-# I should have added set.seed here 
+set.seed(20220215)
 random_20 <- sample(unique(tsl_dat$study), 20)
 
 

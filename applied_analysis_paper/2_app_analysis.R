@@ -3,9 +3,9 @@ library(broom)
 library(robumeta)
 library(janitor)
 library(clubSandwich)
+library(wildmeta)
 
 load("data/tsl_dat_20.RData")
-source("applied_analysis_paper/cwb_function.R")
 
 robu_comp_tsl <- robu(delta ~ g2age + dv, 
                       studynum = study, 
@@ -31,6 +31,19 @@ res_age_edt <- Wald_test(robu_comp_tsl,
                          vcov = "CR2",
                          test = "EDT")
 
+res_age_cwb <- Wald_test_cwb(robu_comp_tsl, 
+                         constraints = constrain_zero(2),
+                         R = 999,
+                         seed = 20200216) %>%
+  rename(test = Test)
+
+res_age_cwb_adj <- Wald_test_cwb(robu_comp_tsl, 
+                             constraints = constrain_zero(2),
+                             R = 999,
+                             seed = 20200217,
+                             adjust = "CR2") %>%
+  rename(test = Test)
+
 # multiple contrast hypothesis --------------------------------------------
 
 res_mch_naive <- Wald_test(robu_comp_tsl, 
@@ -48,43 +61,29 @@ res_mch_edt <- Wald_test(robu_comp_tsl,
                          vcov = "CR2",
                          test = "EDT")
 
-      
+res_mch_cwb <- Wald_test_cwb(robu_comp_tsl, 
+                         constraints = constrain_zero(3:7),
+                         R = 999,
+                         seed = 20200218)  %>%
+  rename(test = Test)
 
-# cluster wild ------------------------------------------------------------
-
-set.seed(01302021)
-
-full_mod <- robu(delta ~ g2age + dv, 
-                 studynum = study, 
-                 var.eff.size = v,
-                 small = TRUE,
-                 data = tsl_dat)
-
-cwb_age <- cwb(full_mod, 
-               indices = 2)
-
-cwb_adj_age <- cwb(full_mod, 
-               indices = 2, 
-               adjust = TRUE)
-
-cwb_mch <- cwb(full_mod, 
-               indices = 3:7)
-
-cwb_adj_mch <- cwb(full_mod, 
-                   indices = 3:7, 
-                   adjust = TRUE)
-
+res_mch_cwb_adj <- Wald_test_cwb(robu_comp_tsl, 
+                                 constraints = constrain_zero(3:7),
+                                 R = 999,
+                                 seed = 20200219,
+                                 adjust = "CR2")  %>%
+  rename(test = Test)
 
 # bind results ------------------------------------------------------------
 
-res_sc <- bind_rows(res_age_naive, res_age_edt, res_age_htz, cwb_age, cwb_adj_age) %>%
+res_sc <- bind_rows(res_age_naive, res_age_edt, res_age_htz, res_age_cwb, res_age_cwb_adj) %>%
   select(Method = test, `F` = Fstat, delta, df_num, df_denom, p = p_val) %>%
   mutate_if(is.numeric, round, 3)
 
 write_csv(res_sc, "applied_analysis_paper/res_sc.csv")
 
 
-res_mch <- bind_rows(res_mch_naive, res_mch_edt, res_mch_htz, cwb_mch, cwb_adj_mch) %>%
+res_mch <- bind_rows(res_mch_naive, res_mch_edt, res_mch_htz, res_mch_cwb, res_mch_cwb_adj) %>%
   select(Method = test, `F` = Fstat, delta, df_num, df_denom, p = p_val) %>%
   mutate_if(is.numeric, round, 3)
 
